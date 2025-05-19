@@ -4,12 +4,9 @@ import '../models/food_entry.dart';
 import '../models/custom_food.dart';
 import '../data/mock_food_data.dart';
 import 'add_custom_food_screen.dart';
-import 'add_food_screen.dart';
 
 class FoodCatalogScreen extends StatefulWidget {
-  final void Function(FoodEntry)? onFoodSelected;
-
-  const FoodCatalogScreen({super.key, this.onFoodSelected});
+  const FoodCatalogScreen({super.key});
 
   @override
   State<FoodCatalogScreen> createState() => _FoodCatalogScreenState();
@@ -20,6 +17,7 @@ class _FoodCatalogScreenState extends State<FoodCatalogScreen> {
 
   List<FoodEntry> _getAllFoods() {
     final customBox = Hive.box<CustomFood>('custom_foods');
+
     final customFoods = customBox.values.map((e) => FoodEntry(
       name: e.name,
       quantity: 100,
@@ -51,11 +49,13 @@ class _FoodCatalogScreenState extends State<FoodCatalogScreen> {
             onPressed: () async {
               await Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const AddCustomFoodScreen()),
+                MaterialPageRoute(
+                  builder: (_) => const AddCustomFoodScreen(),
+                ),
               );
-              setState(() {}); // обновить после добавления
+              setState(() {}); // Обновляем после добавления
             },
-          )
+          ),
         ],
       ),
       body: Column(
@@ -82,7 +82,8 @@ class _FoodCatalogScreenState extends State<FoodCatalogScreen> {
               itemBuilder: (context, index) {
                 final food = filteredFoods[index];
                 return Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  margin: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 6),
                   child: ListTile(
                     title: Text(food.name),
                     subtitle: Text(
@@ -90,14 +91,8 @@ class _FoodCatalogScreenState extends State<FoodCatalogScreen> {
                     ),
                     trailing: const Icon(Icons.add),
                     onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => AddFoodScreen(existingEntry: food),
-                        ),
-                      );
+                      Navigator.pop(context, food); // Возвращаем продукт
                     },
-
                   ),
                 );
               },

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:hive/hive.dart';
+import 'package:hive_flutter/adapters.dart';
 import '../models/user.dart';
 import '../models/food_entry.dart';
 
@@ -9,7 +9,6 @@ class DailyIntakeWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final userBox = Hive.box<User>('user_profile');
-    final foodBox = Hive.box<FoodEntry>('food_entries');
 
     if (userBox.isEmpty) {
       return const Center(child: Text('Нет данных пользователя'));
@@ -17,40 +16,45 @@ class DailyIntakeWidget extends StatelessWidget {
 
     final user = userBox.getAt(0)!;
 
-    final today = DateTime.now();
-    final todayEntries = foodBox.values.where((e) =>
-    e.date.year == today.year &&
-        e.date.month == today.month &&
-        e.date.day == today.day);
+    return ValueListenableBuilder(
+      valueListenable: Hive.box<FoodEntry>('food_entries').listenable(),
+      builder: (context, Box<FoodEntry> foodBox, _) {
+        final today = DateTime.now();
+        final todayEntries = foodBox.values.where((e) =>
+        e.date.year == today.year &&
+            e.date.month == today.month &&
+            e.date.day == today.day);
 
-    double sumCalories = 0;
-    double sumProtein = 0;
-    double sumFat = 0;
-    double sumCarbs = 0;
+        double sumCalories = 0;
+        double sumProtein = 0;
+        double sumFat = 0;
+        double sumCarbs = 0;
 
-    for (var e in todayEntries) {
-      sumCalories += e.calories;
-      sumProtein += e.protein;
-      sumFat += e.fat;
-      sumCarbs += e.carbs;
-    }
+        for (var e in todayEntries) {
+          sumCalories += e.calories;
+          sumProtein += e.protein;
+          sumFat += e.fat;
+          sumCarbs += e.carbs;
+        }
 
-    return Card(
-      margin: const EdgeInsets.all(12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Сегодня съедено', style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 8),
-            _buildRow('Калории', sumCalories, user.dailyCalories, 'ккал'),
-            _buildRow('Белки', sumProtein, user.dailyProtein, 'г'),
-            _buildRow('Жиры', sumFat, user.dailyFat, 'г'),
-            _buildRow('Углеводы', sumCarbs, user.dailyCarbs, 'г'),
-          ],
-        ),
-      ),
+        return Card(
+          margin: const EdgeInsets.all(12),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Сегодня съедено', style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 8),
+                _buildRow('Калории', sumCalories, user.dailyCalories, 'ккал'),
+                _buildRow('Белки', sumProtein, user.dailyProtein, 'г'),
+                _buildRow('Жиры', sumFat, user.dailyFat, 'г'),
+                _buildRow('Углеводы', sumCarbs, user.dailyCarbs, 'г'),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
