@@ -8,7 +8,7 @@ import 'models/workout_plan_entry.dart';
 import 'models/custom_food.dart';
 import 'screens/main_app.dart';
 import 'package:intl/date_symbol_data_local.dart';
-
+import 'theme/app_theme.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Hive.initFlutter();
@@ -38,9 +38,9 @@ class NutritionTrackerApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Трекер питания',
-      theme: ThemeData.dark(useMaterial3: true).copyWith(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
-      ),
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      themeMode: ThemeMode.system,
       home: const MainApp(),
     );
   }
