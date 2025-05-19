@@ -34,12 +34,12 @@ class _AddCustomFoodScreenState extends State<AddCustomFoodScreen> {
     }
   }
 
-  Widget _buildField(TextEditingController controller, String label) {
+  Widget _buildField(TextEditingController controller, String label, [String enterType = "number"]) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: TextFormField(
         controller: controller,
-        keyboardType: TextInputType.number,
+        keyboardType: enterType == "number" ? TextInputType.number : TextInputType.text,
         validator: (val) => val == null || val.isEmpty ? 'Обязательно' : null,
         decoration: InputDecoration(
           labelText: label,
@@ -48,6 +48,7 @@ class _AddCustomFoodScreenState extends State<AddCustomFoodScreen> {
       ),
     );
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -59,7 +60,7 @@ class _AddCustomFoodScreenState extends State<AddCustomFoodScreen> {
           key: _formKey,
           child: ListView(
             children: [
-              _buildField(_nameController, 'Название'),
+              _buildField(_nameController, 'Название',"Text"),
               _buildField(_caloriesController, 'Калории (на 100 г)'),
               _buildField(_proteinController, 'Белки'),
               _buildField(_fatController, 'Жиры'),

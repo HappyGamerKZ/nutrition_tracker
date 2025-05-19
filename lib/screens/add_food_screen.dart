@@ -4,7 +4,9 @@ import '../models/food_entry.dart';
 import 'food_catalog_screen.dart';
 
 class AddFoodScreen extends StatefulWidget {
-  const AddFoodScreen({Key? key}) : super(key: key);
+  final FoodEntry? existingEntry;
+
+  const AddFoodScreen({super.key, this.existingEntry});
 
   @override
   State<AddFoodScreen> createState() => _AddFoodScreenState();
@@ -21,105 +23,76 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
   final _carbsController = TextEditingController();
 
   String _mealType = 'breakfast';
-  FoodEntry? _selectedBaseFood;
+  FoodEntry? _selectedFood;
 
   @override
   void initState() {
     super.initState();
-    _quantityController.addListener(_onQuantityChanged);
-    _nameController.addListener(() {
-      if (_selectedBaseFood != null &&
-          _nameController.text.trim() != _selectedBaseFood!.name) {
-        setState(() {
-          _selectedBaseFood = null; // разблокирует поля
-        });
-      }
-    });
-  }
 
+    if (widget.existingEntry != null) {
+      _selectedFood = widget.existingEntry;
+      _nameController.text = widget.existingEntry!.name;
+      _quantityController.text = widget.existingEntry!.quantity.toString();
+      _caloriesController.text = widget.existingEntry!.calories.toString();
+      _proteinController.text = widget.existingEntry!.protein.toString();
+      _fatController.text = widget.existingEntry!.fat.toString();
+      _carbsController.text = widget.existingEntry!.carbs.toString();
+      _mealType = widget.existingEntry!.mealType;
+    }
+
+    _quantityController.addListener(_onQuantityChanged);
+  }
 
   void _onQuantityChanged() {
-    final grams = double.tryParse(_quantityController.text);
-    if (_selectedBaseFood != null && grams != null && grams > 0) {
-      final scale = grams / 100;
-
-      _caloriesController.text = (_selectedBaseFood!.calories * scale).toStringAsFixed(1);
-      _proteinController.text = (_selectedBaseFood!.protein * scale).toStringAsFixed(1);
-      _fatController.text = (_selectedBaseFood!.fat * scale).toStringAsFixed(1);
-      _carbsController.text = (_selectedBaseFood!.carbs * scale).toStringAsFixed(1);
+    if (_selectedFood == null) return;
+    final quantity = double.tryParse(_quantityController.text);
+    if (quantity != null) {
+      final factor = quantity / _selectedFood!.quantity;
+      _caloriesController.text = (_selectedFood!.calories * factor).toStringAsFixed(1);
+      _proteinController.text = (_selectedFood!.protein * factor).toStringAsFixed(1);
+      _fatController.text = (_selectedFood!.fat * factor).toStringAsFixed(1);
+      _carbsController.text = (_selectedFood!.carbs * factor).toStringAsFixed(1);
     }
   }
 
-  Future<void> _selectFromCatalog() async {
-    final selected = await Navigator.push<FoodEntry>(
+  void _openCatalog() async {
+    final selected = await Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => FoodCatalogScreen(
-          onFoodSelected: (food) => Navigator.pop(context, food),
-        ),
-      ),
+      MaterialPageRoute(builder: (context) => const FoodCatalogScreen()),
     );
 
-    if (selected != null) {
+    if (selected != null && selected is FoodEntry) {
       setState(() {
-        _selectedBaseFood = selected;
+        _selectedFood = selected;
         _nameController.text = selected.name;
-        _quantityController.text = '100';
+        _quantityController.text = selected.quantity.toString();
+        _onQuantityChanged();
       });
-
-      // Вызов пересчета после окончания UI-обновления
-      Future.microtask(_onQuantityChanged);
     }
-
   }
 
-  void _saveFood() async {
-    if (_formKey.currentState!.validate()) {
+  void _saveFood() {
+    if (_formKey.currentState!.validate() && _selectedFood != null) {
       final entry = FoodEntry(
         name: _nameController.text,
-        quantity: double.tryParse(_quantityController.text) ?? 0,
+        quantity: double.parse(_quantityController.text),
         date: DateTime.now(),
         mealType: _mealType,
-        calories: double.tryParse(_caloriesController.text) ?? 0,
-        protein: double.tryParse(_proteinController.text) ?? 0,
-        fat: double.tryParse(_fatController.text) ?? 0,
-        carbs: double.tryParse(_carbsController.text) ?? 0,
+        calories: double.parse(_caloriesController.text),
+        protein: double.parse(_proteinController.text),
+        fat: double.parse(_fatController.text),
+        carbs: double.parse(_carbsController.text),
       );
 
       final box = Hive.box<FoodEntry>('food_entries');
-      await box.add(entry);
+      box.add(entry);
 
       Navigator.pop(context);
     }
   }
 
-  Widget _buildTextField(
-      TextEditingController controller,
-      String label, {
-        bool number = false,
-        bool enabled = true,
-      }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6.0),
-      child: TextFormField(
-        controller: controller,
-        keyboardType: number ? TextInputType.number : TextInputType.text,
-        enabled: enabled, // 🔧 визуальное затенение при false
-        validator: (value) =>
-        value == null || value.isEmpty ? 'Обязательное поле' : null,
-        decoration: InputDecoration(
-          labelText: label,
-          border: const OutlineInputBorder(),
-        ),
-      ),
-    );
-  }
-
-
-
   @override
   void dispose() {
-    _quantityController.removeListener(_onQuantityChanged);
     _nameController.dispose();
     _quantityController.dispose();
     _caloriesController.dispose();
@@ -134,26 +107,50 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Добавить приём пищи')),
       body: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(12.0),
         child: Form(
           key: _formKey,
           child: ListView(
             children: [
-              ElevatedButton(
-                onPressed: _selectFromCatalog,
-                child: const Text('Выбрать из каталога'),
+              GestureDetector(
+                onTap: _openCatalog,
+                child: AbsorbPointer(
+                  child: TextFormField(
+                    controller: _nameController,
+                    decoration: const InputDecoration(
+                      labelText: 'Продукт',
+                      suffixIcon: Icon(Icons.search),
+                    ),
+                  ),
+                ),
               ),
-              const SizedBox(height: 12),
-              _buildTextField(_nameController, 'Название продукта'),
-              _buildTextField(_quantityController, 'Граммы', number: true),
-              _buildTextField(_caloriesController, 'Калории', number: true, enabled: _selectedBaseFood == null),
-              _buildTextField(_proteinController, 'Белки', number: true, enabled: _selectedBaseFood == null),
-              _buildTextField(_fatController, 'Жиры', number: true, enabled: _selectedBaseFood == null),
-              _buildTextField(_carbsController, 'Углеводы', number: true, enabled: _selectedBaseFood == null),
-
-
-              const SizedBox(height: 12),
-              const Text('Тип приёма пищи'),
+              TextFormField(
+                controller: _quantityController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'Граммы'),
+                validator: (value) =>
+                value == null || value.isEmpty ? 'Введите граммы' : null,
+              ),
+              TextFormField(
+                controller: _caloriesController,
+                enabled: false, // затемнённое поле
+                decoration: const InputDecoration(labelText: 'Калории'),
+              ),
+              TextFormField(
+                controller: _proteinController,
+                enabled: false,
+                decoration: const InputDecoration(labelText: 'Белки'),
+              ),
+              TextFormField(
+                controller: _fatController,
+                enabled: false,
+                decoration: const InputDecoration(labelText: 'Жиры'),
+              ),
+              TextFormField(
+                controller: _carbsController,
+                enabled: false,
+                decoration: const InputDecoration(labelText: 'Углеводы'),
+              ),
               DropdownButtonFormField<String>(
                 value: _mealType,
                 items: const [
@@ -162,11 +159,14 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
                   DropdownMenuItem(value: 'dinner', child: Text('Ужин')),
                   DropdownMenuItem(value: 'snack', child: Text('Перекус')),
                 ],
-                onChanged: (val) {
-                  if (val != null) setState(() => _mealType = val);
+                onChanged: (value) {
+                  setState(() {
+                    _mealType = value!;
+                  });
                 },
+                decoration: const InputDecoration(labelText: 'Тип приёма пищи'),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: _saveFood,
                 child: const Text('Сохранить'),
