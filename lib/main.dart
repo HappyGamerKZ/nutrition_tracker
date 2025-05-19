@@ -1,48 +1,47 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-
-import 'models/exercise.dart';
-import 'models/food_entry.dart';
 import 'models/user.dart';
+import 'models/food_entry.dart';
 import 'models/weight_entry.dart';
+import 'models/exercise.dart';
 import 'models/workout_plan_entry.dart';
-import 'screens/home_screen.dart';
 import 'models/custom_food.dart';
+import 'screens/main_app.dart';
+import 'package:intl/date_symbol_data_local.dart';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Инициализация Hive с hive_flutter
   await Hive.initFlutter();
+  await initializeDateFormatting('ru', null);
 
-  // Регистрация адаптеров
-  Hive.registerAdapter(WeightEntryAdapter());
-  Hive.registerAdapter(FoodEntryAdapter());
-  Hive.registerAdapter(ExerciseAdapter());
   Hive.registerAdapter(UserAdapter());
+  Hive.registerAdapter(FoodEntryAdapter());
+  Hive.registerAdapter(WeightEntryAdapter());
+  Hive.registerAdapter(ExerciseAdapter());
   Hive.registerAdapter(WorkoutPlanEntryAdapter());
   Hive.registerAdapter(CustomFoodAdapter());
 
-
-  // Открытие box'ов
-  await Hive.openBox<WeightEntry>('weight_entries');
-  await Hive.openBox<FoodEntry>('food_entries');
   await Hive.openBox<User>('user_profile');
+  await Hive.openBox<FoodEntry>('food_entries');
+  await Hive.openBox<WeightEntry>('weight_entries');
   await Hive.openBox<Exercise>('exercises');
   await Hive.openBox<WorkoutPlanEntry>('workout_plan');
   await Hive.openBox<CustomFood>('custom_foods');
 
-  runApp(const NutritionApp());
+  runApp(const NutritionTrackerApp());
 }
 
-class NutritionApp extends StatelessWidget {
-  const NutritionApp({super.key});
+class NutritionTrackerApp extends StatelessWidget {
+  const NutritionTrackerApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Трекер питания и упражнений',
-      theme: ThemeData(primarySwatch: Colors.green),
-      home: const HomeScreen(),
+      title: 'Трекер питания',
+      theme: ThemeData.dark(useMaterial3: true).copyWith(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
+      ),
+      home: const MainApp(),
     );
   }
 }
