@@ -6,6 +6,8 @@ import 'exercise_screen.dart';
 import 'profile_screen.dart';
 import 'workout_plan_screen.dart';
 import 'food_stats_screen.dart';
+import '../widgets/weight_progress_widget.dart';
+import '../widgets/daily_intake_widget.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -108,6 +110,8 @@ class HomeScreen extends StatelessWidget {
               },
             ),
           ),
+          const WeightProgressWidget(),
+          const DailyIntakeWidget(),
         ],
       ),
     );

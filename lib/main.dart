@@ -7,7 +7,7 @@ import 'models/user.dart';
 import 'models/weight_entry.dart';
 import 'models/workout_plan_entry.dart';
 import 'screens/home_screen.dart';
-
+import 'models/custom_food.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -20,6 +20,8 @@ void main() async {
   Hive.registerAdapter(ExerciseAdapter());
   Hive.registerAdapter(UserAdapter());
   Hive.registerAdapter(WorkoutPlanEntryAdapter());
+  Hive.registerAdapter(CustomFoodAdapter());
+
 
   // Открытие box'ов
   await Hive.openBox<WeightEntry>('weight_entries');
@@ -27,6 +29,7 @@ void main() async {
   await Hive.openBox<User>('user_profile');
   await Hive.openBox<Exercise>('exercises');
   await Hive.openBox<WorkoutPlanEntry>('workout_plan');
+  await Hive.openBox<CustomFood>('custom_foods');
 
   runApp(const NutritionApp());
 }

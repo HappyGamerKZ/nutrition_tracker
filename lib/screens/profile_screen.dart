@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import '../models/user.dart';
+import '../widgets/weight_progress_widget.dart';
+import '../utils/nutrition_calculator.dart';
+import '../widgets/daily_intake_widget.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -56,7 +59,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
         goalWeight: double.parse(_goalWeightController.text),
         goal: _goal,
         activityLevel: _activityLevel,
+        dailyCalories: 0,
+        dailyProtein: 0,
+        dailyFat: 0,
+        dailyCarbs: 0,
       );
+
 
       if (_box.isNotEmpty) {
         _box.putAt(0, newUser);
@@ -100,7 +108,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ElevatedButton(
                 onPressed: _saveUser,
                 child: const Text('Сохранить профиль'),
-              )
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  if (_formKey.currentState!.validate()) {
+                    final updatedUser = User(
+                      name: _nameController.text,
+                      age: int.parse(_ageController.text),
+                      gender: _gender,
+                      height: double.parse(_heightController.text),
+                      currentWeight: double.parse(_currentWeightController.text),
+                      goalWeight: double.parse(_goalWeightController.text),
+                      goal: _goal,
+                      activityLevel: _activityLevel,
+                      dailyCalories: 0,
+                      dailyProtein: 0,
+                      dailyFat: 0,
+                      dailyCarbs: 0,
+                    );
+
+                    final norms = calculateDailyNorm(updatedUser);
+                    updatedUser
+                      ..dailyCalories = norms['calories']!
+                      ..dailyProtein = norms['protein']!
+                      ..dailyFat = norms['fat']!
+                      ..dailyCarbs = norms['carbs']!;
+
+                    if (_box.isNotEmpty) {
+                      _box.putAt(0, updatedUser);
+                    } else {
+                      _box.add(updatedUser);
+                    }
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Норма калорий и БЖУ рассчитана')),
+                    );
+                  }
+                },
+                child: const Text('Рассчитать дневную норму'),
+              ),
+              const WeightProgressWidget(),
+              const DailyIntakeWidget(),
             ],
           ),
         ),

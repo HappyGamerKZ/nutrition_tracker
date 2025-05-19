@@ -28,6 +28,18 @@ class User extends HiveObject {
   @HiveField(7)
   String activityLevel;
 
+  @HiveField(8)
+  double dailyCalories;
+
+  @HiveField(9)
+  double dailyProtein;
+
+  @HiveField(10)
+  double dailyFat;
+
+  @HiveField(11)
+  double dailyCarbs;
+
   User({
     required this.name,
     required this.age,
@@ -37,5 +49,9 @@ class User extends HiveObject {
     required this.goalWeight,
     required this.goal,
     required this.activityLevel,
+    required this.dailyCalories,
+    required this.dailyProtein,
+    required this.dailyFat,
+    required this.dailyCarbs,
   });
 }

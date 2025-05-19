@@ -25,13 +25,17 @@ class UserAdapter extends TypeAdapter<User> {
       goalWeight: fields[5] as double,
       goal: fields[6] as String,
       activityLevel: fields[7] as String,
+      dailyCalories: fields[8] as double,
+      dailyProtein: fields[9] as double,
+      dailyFat: fields[10] as double,
+      dailyCarbs: fields[11] as double,
     );
   }
 
   @override
   void write(BinaryWriter writer, User obj) {
     writer
-      ..writeByte(8)
+      ..writeByte(12)
       ..writeByte(0)
       ..write(obj.name)
       ..writeByte(1)
@@ -47,7 +51,15 @@ class UserAdapter extends TypeAdapter<User> {
       ..writeByte(6)
       ..write(obj.goal)
       ..writeByte(7)
-      ..write(obj.activityLevel);
+      ..write(obj.activityLevel)
+      ..writeByte(8)
+      ..write(obj.dailyCalories)
+      ..writeByte(9)
+      ..write(obj.dailyProtein)
+      ..writeByte(10)
+      ..write(obj.dailyFat)
+      ..writeByte(11)
+      ..write(obj.dailyCarbs);
   }
 
   @override
