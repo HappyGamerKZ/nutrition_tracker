@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
+import 'package:provider/provider.dart';
 import '../models/user.dart';
 import '../widgets/weight_progress_widget.dart';
 import '../utils/nutrition_calculator.dart';
 import '../widgets/daily_intake_widget.dart';
+import '../theme/theme_provider.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -80,6 +82,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final provider = Provider.of<ThemeProvider>(context);
+    final isDark = provider.themeMode == ThemeMode.dark;
     return Scaffold(
       appBar: AppBar(title: const Text('Профиль')),
       body: Padding(
@@ -88,6 +92,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
           key: _formKey,
           child: ListView(
             children: [
+              SwitchListTile(
+                title: const Text('Тёмная тема'),
+                value: isDark,
+                onChanged: provider.toggleTheme,
+              ),
               _buildTextField(_nameController, 'Имя'),
               _buildTextField(_ageController, 'Возраст', number: true),
               _buildTextField(_heightController, 'Рост (см)', number: true),
@@ -147,8 +156,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 },
                 child: const Text('Рассчитать дневную норму'),
               ),
-              const WeightProgressWidget(),
-              const DailyIntakeWidget(),
+              WeightProgressWidget(),
+              DailyIntakeWidget(),
             ],
           ),
         ),

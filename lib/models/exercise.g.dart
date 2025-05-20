@@ -17,31 +17,28 @@ class ExerciseAdapter extends TypeAdapter<Exercise> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return Exercise(
-      name: fields[0] as String,
-      muscleGroup: fields[1] as String,
-      type: fields[2] as String,
-      isHomeFriendly: fields[3] as bool,
-      duration: fields[4] as int,
-      caloriesBurned: fields[5] as int,
+      id: fields[0] as String,
+      name: fields[1] as String,
+      group: fields[2] as String,
+      description: fields[3] as String,
+      sets: fields[4] as int,
     );
   }
 
   @override
   void write(BinaryWriter writer, Exercise obj) {
     writer
-      ..writeByte(6)
-      ..writeByte(0)
-      ..write(obj.name)
-      ..writeByte(1)
-      ..write(obj.muscleGroup)
-      ..writeByte(2)
-      ..write(obj.type)
-      ..writeByte(3)
-      ..write(obj.isHomeFriendly)
-      ..writeByte(4)
-      ..write(obj.duration)
       ..writeByte(5)
-      ..write(obj.caloriesBurned);
+      ..writeByte(0)
+      ..write(obj.id)
+      ..writeByte(1)
+      ..write(obj.name)
+      ..writeByte(2)
+      ..write(obj.group)
+      ..writeByte(3)
+      ..write(obj.description)
+      ..writeByte(4)
+      ..write(obj.sets);
   }
 
   @override

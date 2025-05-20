@@ -27,7 +27,7 @@ class WorkoutPlanScreen extends StatelessWidget {
               return CheckboxListTile(
                 title: Text(entry.exercise.name),
                 subtitle: Text(
-                  '${entry.exercise.duration} мин | ${entry.exercise.caloriesBurned} ккал',
+                  '${entry.exercise.sets} подходов',
                 ),
                 value: entry.isCompleted,
                 onChanged: (val) {

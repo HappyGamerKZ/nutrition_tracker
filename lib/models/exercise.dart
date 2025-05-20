@@ -2,32 +2,29 @@ import 'package:hive/hive.dart';
 
 part 'exercise.g.dart';
 
-@HiveType(typeId: 2)
+@HiveType(typeId: 2) // Заменить X на уникальный ID
 class Exercise extends HiveObject {
   @HiveField(0)
-  String name;
+  String id;
 
   @HiveField(1)
-  String muscleGroup;
+  String name;
 
   @HiveField(2)
-  String type;
+  String group;
 
   @HiveField(3)
-  bool isHomeFriendly;
+  String description;
 
   @HiveField(4)
-  int duration;
-
-  @HiveField(5)
-  int caloriesBurned;
+  int sets;
 
   Exercise({
+    required this.id,
     required this.name,
-    required this.muscleGroup,
-    required this.type,
-    required this.isHomeFriendly,
-    required this.duration,
-    required this.caloriesBurned,
+    required this.group,
+    required this.description,
+    required this.sets,
   });
 }
+

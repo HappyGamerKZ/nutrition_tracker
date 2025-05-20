@@ -4,6 +4,10 @@ import 'package:intl/intl.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../models/food_entry.dart';
 import '../models/user.dart';
+import '../models/weight_entry.dart';
+import '../widgets/daily_intake_widget.dart';
+import '../widgets/weight_progress_widget.dart';
+import 'add_food_screen.dart';
 
 class DiaryScreen extends StatefulWidget {
   const DiaryScreen({super.key});
@@ -54,12 +58,17 @@ class _DiaryScreenState extends State<DiaryScreen> {
             const SizedBox(height: 12),
             _buildCalorieSummary(totalCalories, user.dailyCalories),
             const SizedBox(height: 12),
+            buildUpdateWeightCardButton(context),
             _buildMealSection('Завтрак'),
             _buildMealSection('Обед'),
             _buildMealSection('Ужин'),
             _buildMealSection('Перекус/Другое'),
             const SizedBox(height: 16),
             _buildWaterTracker(),
+            const SizedBox(height: 16),
+            WeightProgressWidget(),
+            const SizedBox(height: 16),
+            DailyIntakeWidget(),
             const SizedBox(height: 16),
             _buildMacroSummary(totalProtein, totalFat, totalCarbs),
             const SizedBox(height: 16),
@@ -115,7 +124,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
     final remaining = goal - consumed;
 
     return Card(
-      color: Colors.black26,
+      color: Theme.of(context).colorScheme.surfaceContainerHighest,
       child: ListTile(
         title: const Text('Осталось Калорий'),
         subtitle: Text('${remaining.toStringAsFixed(0)} ккал'),
@@ -137,12 +146,34 @@ class _DiaryScreenState extends State<DiaryScreen> {
         trailing: IconButton(
           icon: const Icon(Icons.add),
           onPressed: () {
-            // TODO: Navigate to AddFoodScreen
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => AddFoodScreen(
+                  mealType: _mealTypeKey(mealName),
+                  date: selectedDay,
+                ),
+              ),
+            );
           },
         ),
       ),
     );
   }
+
+  String _mealTypeKey(String name) {
+    switch (name.toLowerCase()) {
+      case 'завтрак':
+        return 'breakfast';
+      case 'обед':
+        return 'lunch';
+      case 'ужин':
+        return 'dinner';
+      default:
+        return 'snack';
+    }
+  }
+
 
   Widget _buildWaterTracker() {
     return Card(
@@ -159,9 +190,9 @@ class _DiaryScreenState extends State<DiaryScreen> {
 
   Widget _buildMacroSummary(double protein, double fat, double carbs) {
     final total = protein + fat + carbs;
-    final percentProtein = (protein / total * 100).round();
-    final percentFat = (fat / total * 100).round();
-    final percentCarbs = (carbs / total * 100).round();
+    final percentProtein = total > 0 ? (protein / total * 100).round() : 0;
+    final percentFat = total > 0 ? (fat / total * 100).round() : 0;
+    final percentCarbs = total > 0 ? (carbs / total * 100).round() : 0;
 
     return Card(
       child: Padding(
@@ -179,6 +210,7 @@ class _DiaryScreenState extends State<DiaryScreen> {
       ),
     );
   }
+
 
   Widget _buildMacroRow(String label, int percent, Color color) {
     return Padding(
@@ -200,6 +232,61 @@ class _DiaryScreenState extends State<DiaryScreen> {
       ),
     );
   }
+
+  Widget buildUpdateWeightCardButton(BuildContext context) {
+    return Card(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: ListTile(
+        leading: const Icon(Icons.monitor_weight_outlined, color: Colors.green),
+        title: const Text('Обновить вес'),
+        onTap: () {
+          final controller = TextEditingController();
+
+          showDialog(
+            context: context,
+            builder: (context) {
+              return AlertDialog(
+                title: const Text('Введите текущий вес'),
+                content: TextField(
+                  controller: controller,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    hintText: 'например, 67.5',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      final weight = double.tryParse(controller.text);
+                      if (weight != null) {
+                        final box = Hive.box<WeightEntry>('weight_entries');
+                        box.add(WeightEntry(
+                          date: DateTime.now(),
+                          weight: weight,
+                        ));
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Вес успешно обновлён')),
+                        );
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Введите корректное число')),
+                        );
+                      }
+                    },
+                    child: const Text('Сохранить'),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+
+
 
   Widget _buildMacroPieChart(double protein, double fat, double carbs) {
     final total = protein + fat + carbs;
