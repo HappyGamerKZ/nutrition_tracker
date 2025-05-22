@@ -17,7 +17,7 @@ class Exercise extends HiveObject {
   String description;
 
   @HiveField(4)
-  int sets;
+  String sets;
 
   Exercise({
     required this.id,
@@ -26,5 +26,7 @@ class Exercise extends HiveObject {
     required this.description,
     required this.sets,
   });
+
+  String get assetPath => 'assets/animations/exercises/ex_$id.gif';
 }
 

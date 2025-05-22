@@ -2,70 +2,90 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 
+import 'data/mock_exercises.dart';
+import 'data/mock_food_data.dart';
 import 'models/user.dart';
 import 'models/food_entry.dart';
-import 'models/weight_entry.dart';
 import 'models/exercise.dart';
+import 'models/weight_entry.dart';
 import 'models/workout_plan_entry.dart';
 import 'models/custom_food.dart';
 
+import 'screens/register_screen.dart';
 import 'screens/main_app.dart';
-import 'theme/app_theme.dart';
-import 'theme/theme_provider.dart';
+import 'providers/theme_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Hive.initFlutter();
-  await initializeDateFormatting('ru', null);
 
+  // Регистрация адаптеров
   Hive.registerAdapter(UserAdapter());
   Hive.registerAdapter(FoodEntryAdapter());
-  Hive.registerAdapter(WeightEntryAdapter());
   Hive.registerAdapter(ExerciseAdapter());
+  Hive.registerAdapter(WeightEntryAdapter());
   Hive.registerAdapter(WorkoutPlanEntryAdapter());
   Hive.registerAdapter(CustomFoodAdapter());
 
+  // Открытие box'ов
   await Hive.openBox<User>('user_profile');
   await Hive.openBox<FoodEntry>('food_entries');
-  await Hive.openBox<WeightEntry>('weight_entries');
   await Hive.openBox<Exercise>('exercises');
+  await Hive.openBox<WeightEntry>('weight_entries');
   await Hive.openBox<WorkoutPlanEntry>('workout_plan');
-  await Hive.openBox<CustomFood>('custom_foods');
+  await Hive.openBox<CustomFood>('custom_foods'); // <--- обязательно
 
-  runApp(
-    ChangeNotifierProvider(
-      create: (_) => ThemeProvider(),
-      child: const NutritionTrackerApp(),
-    ),
-  );
+  // Перенеси это сюда, после открытия 'exercises'
+  final exerciseBox = Hive.box<Exercise>('exercises');
+  if (exerciseBox.isEmpty) {
+    for (final exercise in mockExercises) {
+      exerciseBox.add(exercise);
+    }
+  }
+
+  final foodBox = Hive.box<FoodEntry>('food_entries');
+  if (foodBox.isEmpty) {
+    for (final food in mockFoodData) {
+      foodBox.add(food);
+    }
+  }
+
+  await initializeDateFormatting('ru_RU', null); // или 'en_US' или любую другую локаль
+
+  runApp(const NutritionApp());
 }
 
-class NutritionTrackerApp extends StatelessWidget {
-  const NutritionTrackerApp({super.key});
+class NutritionApp extends StatelessWidget {
+  const NutritionApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final provider = Provider.of<ThemeProvider>(context);
-
-    return MaterialApp(
-      title: 'Трекер питания',
-      theme: AppTheme.light,
-      darkTheme: AppTheme.dark,
-      themeMode: provider.themeMode,
-      home: const MainApp(),
-      debugShowCheckedModeBanner: false,
-      supportedLocales: const [
-        Locale('ru'),
-        Locale('en'),
-        Locale('kk'),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        // другие провайдеры если есть
       ],
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, _) {
+          return MaterialApp(
+            title: 'Nutrition Tracker',
+            theme: themeProvider.currentTheme,
+            home: const AppRouter(),
+          );
+        },
+      ),
     );
+  }
+}
+
+class AppRouter extends StatelessWidget {
+  const AppRouter({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final userBox = Hive.box<User>('user_profile');
+    final hasProfile = userBox.containsKey('profile');
+    return hasProfile ? const MainApp() : const RegisterScreen();
   }
 }

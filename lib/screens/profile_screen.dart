@@ -5,7 +5,7 @@ import '../models/user.dart';
 import '../widgets/weight_progress_widget.dart';
 import '../utils/nutrition_calculator.dart';
 import '../widgets/daily_intake_widget.dart';
-import '../theme/theme_provider.dart';
+import '../providers/theme_provider.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -43,12 +43,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _heightController.text = user.height.toString();
         _currentWeightController.text = user.currentWeight.toString();
         _goalWeightController.text = user.goalWeight.toString();
-        _gender = user.gender;
-        _goal = user.goal;
-        _activityLevel = user.activityLevel;
+
+        // 🔐 Защита от "мусора" в старых данных
+        _gender = ['male', 'female', 'unknown'].contains(user.gender)
+            ? user.gender
+            : 'unknown';
+
+        _goal = ['gain', 'lose', 'maintain'].contains(user.goal)
+            ? user.goal
+            : 'maintain';
+
+        _activityLevel = ['low', 'medium', 'high'].contains(user.activityLevel)
+            ? user.activityLevel
+            : 'medium';
       }
     }
   }
+
 
   void _saveUser() {
     if (_formKey.currentState!.validate()) {
@@ -83,7 +94,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<ThemeProvider>(context);
-    final isDark = provider.themeMode == ThemeMode.dark;
+    final isDark = provider.isDarkMode;
     return Scaffold(
       appBar: AppBar(title: const Text('Профиль')),
       body: Padding(
@@ -94,8 +105,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             children: [
               SwitchListTile(
                 title: const Text('Тёмная тема'),
-                value: isDark,
-                onChanged: provider.toggleTheme,
+                value: isDark, onChanged: (val) {
+                    provider.setDarkMode(val); // нужно реализовать метод setDarkMode(bool)
+                }
               ),
               _buildTextField(_nameController, 'Имя'),
               _buildTextField(_ageController, 'Возраст', number: true),
@@ -103,7 +115,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               _buildTextField(_currentWeightController, 'Текущий вес (кг)', number: true),
               _buildTextField(_goalWeightController, 'Желаемый вес (кг)', number: true),
               const SizedBox(height: 12),
-              _buildDropdown('Пол', _gender, ['male', 'female'], (val) {
+              _buildDropdown('Пол', _gender, ['male', 'female', 'unknown'], (val) {
                 setState(() => _gender = val!);
               }),
               _buildDropdown('Цель', _goal, ['gain', 'lose', 'maintain'], (val) {
@@ -156,7 +168,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 },
                 child: const Text('Рассчитать дневную норму'),
               ),
-              WeightProgressWidget(),
               DailyIntakeWidget(),
             ],
           ),

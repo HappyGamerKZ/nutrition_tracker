@@ -100,17 +100,27 @@ class _ReportScreenState extends State<ReportScreen> {
   }
 
   Widget _buildPeriodButton(String key, String label) {
-    return TextButton(
-      onPressed: () => setState(() => _period = key),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontWeight: _period == key ? FontWeight.bold : FontWeight.normal,
-          color: _period == key ? Colors.green : Colors.white,
+    final isSelected = _period == key;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: TextButton(
+        style: TextButton.styleFrom(
+          backgroundColor: isSelected
+              ? colorScheme.primary.withOpacity(0.15)
+              : colorScheme.surfaceVariant,
+          foregroundColor: isSelected
+              ? colorScheme.primary
+              : colorScheme.onSurface, // адаптивный цвет текста
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
+        onPressed: () => setState(() => _period = key),
+        child: Text(label),
       ),
     );
   }
+
 
   Widget _buildCaloriesChart(Map<String, List<FoodEntry>> data, double goal) {
     final days = data.keys.toList()..sort();

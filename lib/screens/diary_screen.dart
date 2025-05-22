@@ -5,9 +5,10 @@ import 'package:fl_chart/fl_chart.dart';
 import '../models/food_entry.dart';
 import '../models/user.dart';
 import '../models/weight_entry.dart';
+import '../utils/nutrition_calculator.dart';
 import '../widgets/daily_intake_widget.dart';
-import '../widgets/weight_progress_widget.dart';
 import 'add_food_screen.dart';
+import '../utils/weight_helper.dart';
 
 class DiaryScreen extends StatefulWidget {
   const DiaryScreen({super.key});
@@ -48,32 +49,40 @@ class _DiaryScreenState extends State<DiaryScreen> {
     final totalCarbs = entries.fold<double>(0, (sum, e) => sum + e.carbs);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Дневник')),
+      appBar: AppBar(title: const Text(' Дневник')),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildWeekSelector(),
-            const SizedBox(height: 12),
-            _buildCalorieSummary(totalCalories, user.dailyCalories),
-            const SizedBox(height: 12),
-            buildUpdateWeightCardButton(context),
-            _buildMealSection('Завтрак'),
-            _buildMealSection('Обед'),
-            _buildMealSection('Ужин'),
-            _buildMealSection('Перекус/Другое'),
-            const SizedBox(height: 16),
-            _buildWaterTracker(),
-            const SizedBox(height: 16),
-            WeightProgressWidget(),
-            const SizedBox(height: 16),
-            DailyIntakeWidget(),
-            const SizedBox(height: 16),
-            _buildMacroSummary(totalProtein, totalFat, totalCarbs),
-            const SizedBox(height: 16),
-            _buildMacroPieChart(totalProtein, totalFat, totalCarbs),
-          ],
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Align(
+          alignment: Alignment.topCenter,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(context).size.width * 0.95,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _buildWeekSelector(),
+                const SizedBox(height: 12),
+                _buildCalorieSummary(totalCalories, user.dailyCalories),
+                const SizedBox(height: 12),
+                buildUpdateWeightCardButton(context),
+                _buildMealSection('Завтрак'),
+                _buildMealSection('Обед'),
+                _buildMealSection('Ужин'),
+                _buildMealSection('Перекус/Другое'),
+                const SizedBox(height: 16),
+                _buildWaterTracker(),
+                const SizedBox(height: 16),
+                _buildWeightGoalProgress(user),
+                const SizedBox(height: 16),
+                DailyIntakeWidget(),
+                const SizedBox(height: 16),
+                _buildMacroSummary(totalProtein, totalFat, totalCarbs),
+                const SizedBox(height: 16),
+                _buildMacroPieChart(totalProtein, totalFat, totalCarbs),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -81,32 +90,37 @@ class _DiaryScreenState extends State<DiaryScreen> {
 
   Widget _buildWeekSelector() {
     final startOfWeek = today.subtract(Duration(days: today.weekday - 1));
+    final colorScheme = Theme.of(context).colorScheme;
 
     return SizedBox(
       height: 80,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: 7,
-        itemBuilder: (context, index) {
+      child: Row(
+        children: List.generate(7, (index) {
           final day = startOfWeek.add(Duration(days: index));
           final isToday = DateUtils.isSameDay(day, today);
           final isSelected = DateUtils.isSameDay(day, selectedDay);
 
-          return GestureDetector(
-            onTap: () => setState(() => selectedDay = day),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
+          return Expanded(
+            child: GestureDetector(
+              onTap: () => setState(() => selectedDay = day),
               child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(DateFormat.E().format(day), style: TextStyle(color: isToday ? Colors.green : null)),
+                  Text(
+                    DateFormat.E().format(day),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: isToday ? colorScheme.primary : colorScheme.onSurfaceVariant,
+                    ),
+                  ),
                   const SizedBox(height: 4),
                   CircleAvatar(
-                    backgroundColor: isSelected ? Colors.green : Colors.grey[800],
+                    backgroundColor: isSelected ? colorScheme.primary : colorScheme.surfaceContainerHighest,
                     radius: 16,
                     child: Text(
                       '${day.day}',
                       style: TextStyle(
-                        color: isSelected ? Colors.white : Colors.grey[400],
+                        color: isSelected ? colorScheme.onPrimary : colorScheme.onSurfaceVariant,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -115,10 +129,12 @@ class _DiaryScreenState extends State<DiaryScreen> {
               ),
             ),
           );
-        },
+        }),
       ),
     );
   }
+
+
 
   Widget _buildCalorieSummary(double consumed, double goal) {
     final remaining = goal - consumed;
@@ -145,8 +161,8 @@ class _DiaryScreenState extends State<DiaryScreen> {
         title: Text(mealName),
         trailing: IconButton(
           icon: const Icon(Icons.add),
-          onPressed: () {
-            Navigator.push(
+          onPressed: () async {
+            await Navigator.push(
               context,
               MaterialPageRoute(
                 builder: (_) => AddFoodScreen(
@@ -155,11 +171,13 @@ class _DiaryScreenState extends State<DiaryScreen> {
                 ),
               ),
             );
+            setState(() {}); // Обновление после возврата
           },
         ),
       ),
     );
   }
+
 
   String _mealTypeKey(String name) {
     switch (name.toLowerCase()) {
@@ -260,12 +278,10 @@ class _DiaryScreenState extends State<DiaryScreen> {
                     onPressed: () {
                       final weight = double.tryParse(controller.text);
                       if (weight != null) {
-                        final box = Hive.box<WeightEntry>('weight_entries');
-                        box.add(WeightEntry(
-                          date: DateTime.now(),
-                          weight: weight,
-                        ));
+                        addOrUpdateWeight(weight);
+                        _updateUserProfileWeight(weight);
                         Navigator.pop(context);
+                        setState(() {});
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('Вес успешно обновлён')),
                         );
@@ -323,5 +339,144 @@ class _DiaryScreenState extends State<DiaryScreen> {
         ),
       ),
     );
+  }
+}
+Widget _buildWeightGoalProgress(User user) {
+  final weightBox = Hive.box<WeightEntry>('weight_entries');
+  final entries = weightBox.values.toList()
+    ..sort((a, b) => b.date.compareTo(a.date));
+
+  if (entries.isEmpty) {
+    final fallbackWeight = user.currentWeight;
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text("Нет записей о весе, используем данные профиля"),
+            const SizedBox(height: 8),
+            Text("Текущий вес (по профилю): ${fallbackWeight.toStringAsFixed(1)} кг"),
+            Text("Цель: ${user.goalWeight.toStringAsFixed(1)} кг"),
+          ],
+        ),
+      ),
+    );
+  }
+
+  final currentWeight = entries.first.weight;
+  final goalWeight = user.goalWeight;
+  final goalType = user.goal;
+
+  String directionLabel;
+  switch (goalType) {
+    case 'lose':
+      directionLabel = 'снижения веса';
+      break;
+    case 'gain':
+      directionLabel = 'набора массы';
+      break;
+    case 'maintain':
+    default:
+      directionLabel = 'поддержания формы';
+      break;
+  }
+
+  final allWeights = entries.map((e) => e.weight).toList();
+  double baseWeight;
+  if (goalType == 'lose') {
+    baseWeight = allWeights.reduce((a, b) => a > b ? a : b); // max
+  } else if (goalType == 'gain') {
+    baseWeight = allWeights.reduce((a, b) => a < b ? a : b); // min
+  } else {
+    baseWeight = currentWeight; // not used for maintain
+  }
+
+  double progress = 0;
+
+  if (goalType == 'maintain') {
+    progress = calculateMaintainProgress(currentWeight, goalWeight);
+  } else {
+    final totalChange = (goalWeight - baseWeight).abs();
+    final changedSoFar = (currentWeight - baseWeight).abs();
+    if (totalChange > 0) {
+      progress = (changedSoFar / totalChange).clamp(0.0, 1.0);
+    } else {
+      progress = 1.0;
+    }
+  }
+
+  final deviationFromGoal = (currentWeight - goalWeight).abs();
+
+  return Card(
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Прогресс $directionLabel', style: const TextStyle(fontSize: 16)),
+          const SizedBox(height: 12),
+          LinearProgressIndicator(
+            value: progress,
+            minHeight: 12,
+            color: Colors.green,
+            backgroundColor: Colors.grey[300],
+          ),
+          const SizedBox(height: 8),
+          Text("Текущий: ${currentWeight.toStringAsFixed(1)} кг — Цель: ${goalWeight.toStringAsFixed(1)} кг"),
+          if (goalType == 'maintain' && deviationFromGoal >= 10)
+            const Padding(
+              padding: EdgeInsets.only(top: 12),
+              child: Text(
+                'Отклонение превышает 10 кг — рекомендуется сменить цель на снижение или набор веса.',
+                style: TextStyle(color: Colors.red),
+              ),
+            ),
+        ],
+      ),
+    ),
+  );
+}
+
+
+void _updateUserProfileWeight(double newWeight) async {
+  final userBox = Hive.box<User>('user_profile');
+  if (userBox.containsKey('profile')) {
+    final user = userBox.get('profile')!;
+    final updatedUser = User(
+      name: user.name,
+      age: user.age,
+      gender: user.gender,
+      height: user.height,
+      currentWeight: newWeight,
+      goalWeight: user.goalWeight,
+      goal: user.goal,
+      activityLevel: user.activityLevel,
+      dailyCalories: user.dailyCalories,
+      dailyProtein: user.dailyProtein,
+      dailyFat: user.dailyFat,
+      dailyCarbs: user.dailyCarbs,
+    );
+
+    final norm = calculateDailyNorm(updatedUser);
+    updatedUser
+      ..dailyCalories = norm['calories']!
+      ..dailyProtein = norm['protein']!
+      ..dailyFat = norm['fat']!
+      ..dailyCarbs = norm['carbs']!;
+
+    await userBox.put('profile', updatedUser);
+  }
+}
+
+double calculateMaintainProgress(double currentWeight, double targetWeight) {
+  final deviation = (currentWeight - targetWeight).abs();
+
+  if (deviation <= 1.0) {
+    return 1.0;
+  } else if (deviation >= 3.0) {
+    return 0.0;
+  } else {
+    return (1 - (deviation - 1) / (3 - 1)).clamp(0.0, 1.0);
   }
 }

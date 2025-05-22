@@ -1,24 +1,8 @@
-
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+
+import '../models/exercise.dart';
 import 'exercise_detail_screen.dart';
-
-class Exercise {
-  final String id;
-  final String name;
-  final String group;
-  final String description;
-  final int sets;
-
-  Exercise({
-    required this.id,
-    required this.name,
-    required this.group,
-    required this.description,
-    required this.sets,
-  });
-
-  String get assetPath => 'assets/animations/exercises/ex_$id.gif';
-}
 
 class ExerciseScreen extends StatefulWidget {
   const ExerciseScreen({super.key});
@@ -28,39 +12,10 @@ class ExerciseScreen extends StatefulWidget {
 }
 
 class _ExerciseScreenState extends State<ExerciseScreen> {
-  final List<String> groups = ['Ноги', 'Грудные', 'Пресс', 'Руки', 'Спина', 'Кардио'];
   String? selectedGroup;
-
-  final List<Exercise> allExercises = [
-    Exercise(
-      id: '01',
-      name: 'Приседания',
-      group: 'Ноги',
-      description: 'Классические приседания с собственным весом.',
-      sets: 3,
-    ),
-    Exercise(
-      id: '02',
-      name: 'Отжимания',
-      group: 'Грудные',
-      description: 'Отжимания от пола для укрепления грудных мышц.',
-      sets: 4,
-    ),
-    Exercise(
-      id: '03',
-      name: 'Планка',
-      group: 'Пресс',
-      description: 'Удержание тела в статичной позиции на локтях.',
-      sets: 3,
-    ),
-  ];
 
   @override
   Widget build(BuildContext context) {
-    final filtered = selectedGroup == null
-        ? []
-        : allExercises.where((e) => e.group == selectedGroup).toList();
-
     return Scaffold(
       appBar: AppBar(title: const Text('Каталог упражнений')),
       body: Padding(
@@ -82,23 +37,39 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
             ),
             const SizedBox(height: 12),
             Expanded(
-              child: ListView.builder(
-                itemCount: filtered.length,
-                itemBuilder: (context, index) {
-                  final ex = filtered[index];
-                  return Card(
-                    child: ListTile(
-                      title: Text(ex.name),
-                      subtitle: Text('Подходов: ${ex.sets}'),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => ExerciseDetailScreen(exercise: ex),
-                          ),
-                        );
-                      },
-                    ),
+              child: ValueListenableBuilder(
+                valueListenable:
+                Hive.box<Exercise>('exercises').listenable(),
+                builder: (context, Box<Exercise> box, _) {
+                  final exercises = box.values
+                      .where((e) => e.group == selectedGroup)
+                      .toList();
+
+                  if (exercises.isEmpty) {
+                    return const Center(
+                        child: Text('Нет упражнений в этой группе.'));
+                  }
+
+                  return ListView.builder(
+                    itemCount: exercises.length,
+                    itemBuilder: (context, index) {
+                      final ex = exercises[index];
+                      return Card(
+                        child: ListTile(
+                          title: Text(ex.name),
+                          subtitle: Text('Подходов: ${ex.sets}'),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    ExerciseDetailScreen(exercise: ex),
+                              ),
+                            );
+                          },
+                        ),
+                      );
+                    },
                   );
                 },
               ),
@@ -110,17 +81,37 @@ class _ExerciseScreenState extends State<ExerciseScreen> {
   }
 
   Widget _buildGroupSelection() {
+    final box = Hive.box<Exercise>('exercises');
+    final uniqueGroups = box.values.map((e) => e.group).toSet().toList();
+
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return GridView.count(
       crossAxisCount: 2,
       shrinkWrap: true,
       mainAxisSpacing: 12,
       crossAxisSpacing: 12,
-      children: groups
-          .map((group) => ElevatedButton(
-        onPressed: () => setState(() => selectedGroup = group),
-        child: Text(group),
-      ))
-          .toList(),
+      children: uniqueGroups.map(
+            (group) {
+          return ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isDark ? Colors.grey[800] : Colors.blue[100],
+              foregroundColor: isDark ? Colors.white : Colors.black,
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 3,
+            ),
+            onPressed: () => setState(() => selectedGroup = group),
+            child: Text(
+              group,
+              style: const TextStyle(fontSize: 16),
+              textAlign: TextAlign.center,
+            ),
+          );
+        },
+      ).toList(),
     );
   }
 }

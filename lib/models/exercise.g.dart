@@ -21,7 +21,7 @@ class ExerciseAdapter extends TypeAdapter<Exercise> {
       name: fields[1] as String,
       group: fields[2] as String,
       description: fields[3] as String,
-      sets: fields[4] as int,
+      sets: fields[4] as String,
     );
   }
 
